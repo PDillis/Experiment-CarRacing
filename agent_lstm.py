@@ -12,13 +12,13 @@ class Agent:
 
 		with tf.variable_scope('network'):
 			# Placeholders for the action, advantage and target value
-			self.action = tf.placeholder('float32',
+			self.action = tf.placeholder(dtype = tf.float32,
 			                             [None, self.action_size],
 			                             name = 'action')
-			self.advantages = tf.placeholder('float32',
+			self.advantages = tf.placeholder(dtype = tf.float32,
 			                                 [None],
 			                                 name ='advantages')
-			self.target_value = tf.placeholder('float32',
+			self.target_value = tf.placeholder(dtype = tf.float32,
 			                                   [None],
 			                                   name = 'target_value')
 			# Store the state, policy and value for the network
@@ -121,7 +121,7 @@ class Agent:
 	# policy from fc1 and a linear output for the value from fc1.
 
 	def build_model(self, h, w, channels):
-		state = tf.placeholder('float32', shape=(None, h, w, channels), name = 'state')
+		state = tf.placeholder(dtype = tf.float32, shape=(None, h, w, channels), name = 'state')
 
 		# We have four convolutional layers as in universe-starter-agent.
 		with tf.variable_scope('conv1'):
@@ -200,7 +200,7 @@ class Agent:
 
 		# The state has shape batch size x h x w x 1. We need four dimensions in order to do convolutions
 
-		state = tf.placeholder('float32', shape = (None, h, w, 1), name = 'state')
+		state = tf.placeholder(dtype = tf.float32, shape = (None, h, w, 1), name = 'state')
 		self.layers['state'] = state
 
 
@@ -317,7 +317,7 @@ class Agent:
 
 	def build_model_feedforward(self, input_dim, num_hidden = 30):
 		self.layers = {}
-		state = tf.placeholder('float32', shape = (None, input_dim), name = 'state')
+		state = tf.placeholder(dtype = tf.float32, shape = (None, input_dim), name = 'state')
 
 		self.layers['state'] = state
 
