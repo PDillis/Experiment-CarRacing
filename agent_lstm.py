@@ -23,9 +23,9 @@ class Agent:
 			                                   name = 'target_value')
 			# Store the state, policy and value for the network
 			if model == 'mnih':
-				self.state, self.policy, self.value = self.build_model(84,84,4)
-			elif model == 'minh-lstm':
-				self.state, self.policy, self.value = self.build_model_lstm(84, 84)
+				self.state, self.policy, self.value = self.build_model(42,42,4)
+			elif model == 'mnih-lstm':
+				self.state, self.policy, self.value = self.build_model_lstm(42, 42)
 			else:
 				# Assume we wanted a feedforward neural network
 				self.state, self.policy, self.value = self.build_model_feedforward(4)
