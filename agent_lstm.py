@@ -35,7 +35,7 @@ class Agent:
 
 		with tf.variable_scope('optimizer'):
 			# Compute the one hot vectors for each action given.
-			action_one_hot = tf.one_hot(self.action, self.action_size, 1.0, 0.0)
+			action_one_hot = tf.one_hot(self.action, self.action_size, 1, 0)
 
 			# Clip the policy output to avoid zeroes and ones -- these don't play well with the log
 			min_policy = 1e-8
