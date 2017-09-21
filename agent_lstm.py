@@ -354,7 +354,7 @@ class Agent:
 			                                          num_outputs = 1,
 			                                          activation_fn = None,
 			                                          weights_initializer = tf.contrib.layers.xavier_initializer(),
-			                                          biases_initialize = tf.zeros_initializer())
+			                                          biases_initializer = tf.zeros_initializer())
 			self.layers['value'] = value
 
 		return state, policy, value
