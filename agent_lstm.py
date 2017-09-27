@@ -3,7 +3,8 @@ import numpy as np
 
 
 class Agent:
-	def __init__(self, session, action_size, model='mnih-lstm', optimizer = tf.train.AdamOptimizer(1e-4)):
+	def __init__(self, session, action_size, model = 'mnih',
+	             optimizer = tf.train.AdamOptimizer(1e-4)):
 		# session: the tensorflow session
 		# action_size: the number of actions
 		self.action_size = action_size
@@ -12,18 +13,18 @@ class Agent:
 
 		with tf.variable_scope('network'):
 			# Placeholders for the action, advantage and target value
-			self.action = tf.placeholder(dtype = tf.float32,
-			                             [None, self.action_size],
+			self.action = tf.placeholder('float32',
+			                             [None, 3],
 			                             name = 'action')
-			self.advantages = tf.placeholder(dtype = tf.float32,
+			self.advantages = tf.placeholder('float32',
 			                                 [None],
-			                                 name ='advantages')
-			self.target_value = tf.placeholder(dtype = tf.float32,
+			                                 name = 'advantages')
+			self.target_value = tf.placeholder('float32',
 			                                   [None],
 			                                   name = 'target_value')
 			# Store the state, policy and value for the network
 			if model == 'mnih':
-				self.state, self.policy, self.value = self.build_model(42,42,4)
+				self.state, self.policy, self.value = self.build_model(42, 42, 4)
 			elif model == 'mnih-lstm':
 				self.state, self.policy, self.value = self.build_model_lstm(42, 42)
 			else:
@@ -31,69 +32,84 @@ class Agent:
 				self.state, self.policy, self.value = self.build_model_feedforward(4)
 
 			# Get the weights for the network
-			self.weights = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = 'network')
+			self.weights = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
+			                                 scope = 'network')
 
 		with tf.variable_scope('optimizer'):
 			# Compute the one hot vectors for each action given.
-			action_one_hot = tf.one_hot(self.action, self.action_size, 1.0, 0.0, dtype = tf.float32)
+			action_one_hot = tf.one_hot(self.action, self.action_size,
+			                            1.0, 0.0, dtype = tf.float32)
 
-			# Clip the policy output to avoid zeroes and ones -- these don't play well with the log
+			# Clip the policy output to avoid zeroes and ones --
+			# these don't play well with the log
 			min_policy = 1e-8
 			max_policy = 1.0 - 1e-8
 			self.log_policy = tf.log(tf.clip_by_value(self.policy, 1e-6, 1-1e-6))
 
-			# For a given state and action, compute the log of the policy at that action for that
-			# state. This also works on batches.
+			# For a given state and action, compute the log of the policy at
+			# that action for that state. This also works on batches.
 
-			self.log_pi_for_action = tf.reduce_sum(tf.multiply(self.log_policy, action_one_hot), reduction_indices = 1)
+			self.log_pi_for_action = \
+				tf.reduce_sum(tf.multiply(self.log_policy, action_one_hot),
+				              reduction_indices = 1)
 
-			# Takes in R_t - V(S_t) as in the A3C paper. Note that we feed in the advantages so that
-			# V(S_t) is treated as a constant for the gradient. This is because V(S_t) is the base-
-			# line (called 'b' in the REINFORCE algorithm). As long as the baseline is constant w.r.t.
-			# the parameters we are optimizing (in this case those for the policy), then the expected
-			# value of grad_theta log pi * b is zero, so the choice of b doesn't affect the expecta-
-			# tion, but it does reduce the variance.
+			# Takes in R_t - V(S_t) as in the A3C paper. Note that we feed in
+			# the advantages so that V(S_t) is treated as a constant for the
+			# gradient. This is because V(S_t) is the baseline (called 'b' in
+			# the REINFORCE algorithm). As long as the baseline is constant
+			# w.r.t. the parameters we are optimizing (in this case those for
+			# the policy), then the expected value of grad_theta log pi * b is
+			# zero, so the choice of b doesn't affect the expectation, but it
+			# does reduce the variance.
 
-			# We want to do gradient ascent on the expected discounted reward. The gradient of the
-			# expected discounted reward is the gradient of log pi * (R - estimated V), where R is
-			# the sampled reward from the given state following the policy pi. Since we want to
-			# maximise this, we define the policy loss as the negative and get tensorflow to do the
-			# automatic differentiation for us.
+			# We want to do gradient ascent on the expected discounted reward.
+			# The gradient of the expected discounted reward is the gradient
+			# of log pi * (R - estimated V), where R is the sampled reward
+			# from the given state following the policy pi. Since we want to
+			# maximise this, we define the policy loss as the negative and get
+			# tensorflow to do the automatic differentiation for us.
 
 			self.policy_loss = -tf.reduce_mean(self.log_pi_for_action * self.advantages)
 
-			# The value loss is much easier to understand: we want our value function to accurately
-			# estimate the sampled discounted rewards, so we just impose a square error loss. Note
-			# that the target value should be the discounted reward for the state as just sampled.
+			# The value loss is much easier to understand: we want our value
+			# function to accurately estimate the sampled discounted rewards,
+			# so we just impose a square error loss. Note that the target
+			# value should be the discounted reward for the state as just sampled.
 
 			self.value_loss = tf.reduce_mean(tf.square(self.target_value - self.value))
 
-			# Following Mnih's paper, we introduce the entropy as another loss to the policy. The
-			# entropy of a probability distribution is just the expected value of - log P(X), denoted
-			# E(-log P(X)), which we can compute for our policy at any given state with the following:
-			# sum(policy * - log(policy)), as below. This will be a positive number, since self.policy
-			# contains numbers between 0 and 1, so the log is negative. Note that entropy is smaller
-			# when the probability distribution is more concentrated on one action, so a larger entropy
-			# implies more exploration. Thus, we penalise small entropy, or equivalently, add -entropy
-			# to our loss.
+			# Following Mnih's paper, we introduce the entropy as another loss
+			# to the policy. The entropy of a probability distribution is just
+			# the expected value of - log P(X), denoted E(-log P(X)), which we
+			# can compute for our policy at any given state with the following:
+			# sum(policy * - log(policy)), as below. This will be a positive
+			# number, since self.policy contains numbers between 0 and 1, so
+			# the log is negative. Note that entropy is smaller when the proba-
+			# bility distribution is more concentrated on one action, so a
+			# larger entropy implies more exploration. Thus, we penalise small
+			# entropy, or equivalently, add -entropy to our loss.
 
 			self.entropy = tf.reduce_sum(tf.multiply(self.policy, -self.log_policy))
 
-			# Try to minimise the loss. There is some rationale for choosing the weighted linear combina-
-			# tion used next, but more research is granted. Note the negative entropy term, which encourages
-			# exploration: higher entropy corresponds to less certainty (determinism).
+			# Try to minimise the loss. There is some rationale for choosing
+			# the weighted linear combination used next, but more research is
+			# granted. Note the negative entropy term, which encourages
+			# exploration: higher entropy corresponds to less certainty
+			# (determinism).
 
 			self.loss = 0.5 * self.value_loss + self.policy_loss - 0.01 * self.entropy
 
-			# Compute the gradient of the loss with respect to all the weights, and create a list of tuples
-			# consisting of the gradient to apply to the weight.
+			# Compute the gradient of the loss with respect to all the weights,
+			# and create a list of tuples consisting of the gradient to apply
+			# to the weight.
 
 			grads = tf.gradients(self.loss, self.weights)
 			grads, _ = tf.clip_by_global_norm(grads, 40.0)
 			grads_vars = list(zip(grads, self.weights))
 
-			# Create an operator to apply the gradients using the optimizer. Note that apply_gradients is
-			# the second part of minimize() for the optimizer, so will minimize the loss.
+			# Create an operator to apply the gradients using the optimizer.
+			# Note that apply_gradients is the second part of minimize() for
+			# the optimizer, so will minimize the loss.
 
 			self.train_op = optimizer.apply_gradients(grads_vars)
 
@@ -112,16 +128,19 @@ class Agent:
 
 	def train(self, states, actions, target_values, advantages):
 		# Training
-		self.sess.run(self.train_op, feed_dict = {self.state: states,
+		self.sess.run(self.train_op, feed_dict={self.state: states,
 		                                          self.action: actions,
 		                                          self. target_value: target_values,
 		                                          self.advantages: advantages})
 
-	# Builds the model as in universe-starter-agent, but we get a softmax output for the
-	# policy from fc1 and a linear output for the value from fc1.
+	# Builds the model as in universe-starter-agent, but we get a softmax
+	# output for the policy from fc1 and a linear output for the value from
+	# the fcl.
 
 	def build_model(self, h, w, channels):
-		state = tf.placeholder(dtype = tf.float32, shape=(None, h, w, channels), name = 'state')
+		state = tf.placeholder(dtype = tf.float32,
+		                       shape = (None, h, w, channels),
+		                       name = 'state')
 
 		# We have four convolutional layers as in universe-starter-agent.
 		with tf.variable_scope('conv1'):
@@ -197,12 +216,9 @@ class Agent:
 
 	def build_model_lstm(self, h, w):
 		self.layers = {}
-
 		# The state has shape batch size x h x w x 1. We need four dimensions in order to do convolutions
-
 		state = tf.placeholder(dtype = tf.float32, shape = (None, h, w, 1), name = 'state')
 		self.layers['state'] = state
-
 
 		# Convolutional layers
 
@@ -287,7 +303,7 @@ class Agent:
 			                                             sequence_length = sequence_length,
 			                                             time_major = False)
 			lstm_c, lstm_h = lstm_state
-			self.rnn_state_out = (lstm_c[:1,:], lstm_h[:1,:])
+			self.rnn_state_out = (lstm_c[:1, :], lstm_h[:1, :])
 			rnn_out = tf.reshape(lstm_outputs, [-1, 256])
 			self.layers['rnn_state_init'] = self.rnn_state_init
 			self.layers['rnn_state_in'] = self.rnn_state_in
@@ -320,7 +336,6 @@ class Agent:
 		state = tf.placeholder(dtype = tf.float32, shape = (None, input_dim), name = 'state')
 
 		self.layers['state'] = state
-
 
 		# Two fully connected layer with num_hidden hidden units
 		with tf.variable_scope('fcl1'):
