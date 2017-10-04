@@ -33,7 +33,7 @@ VERBOSE_EVERY = 50000
 TESTING = False
 
 # Update the parameters in each thread after this many steps in that thread
-I_ASYNC_UPDATE = 20 # as per universe-starter-agent
+I_ASYNC_UPDATE = 20  # as per universe-starter-agent
 
 # Flags
 FLAGS = {"T_MAX": T_MAX,
@@ -72,20 +72,21 @@ class Summary:
 		summary_to_add = self.agent.sess.run(self.summary_op, {self.summary_vars[k]: v for k, v in summary.items()})
 		self.writer.add_summary(summary_to_add, global_step = t)
 
+
 def async_trainer(agent, env, sess, thread_idx, T_queue, summary, saver, save_path):
 	print("Training thread", thread_idx)
 	T = T_queue.get()
 	T_queue.put(T+1)
 	t = 0
 
-	last_verbose = T
-	last_time = time()
-	last_target_update = T
+	# last_verbose = T  % Not used here
+	# last_time = time()
+	# last_target_update = T
 
 	terminal = True
 
 	while T < T_MAX:
-		t_start = t
+		# t_start = t  # What for?
 		batch_states = []
 		batch_rewards = []
 		batch_actions = []
@@ -202,7 +203,7 @@ def estimate_reward(agent, env, episodes = 10, max_steps = 10000):
 		rnn_state = agent.rnn_state_init
 		while not terminal:
 
-			#Get the policy, value and next rnn state
+			# Get the policy, value and next rnn state
 			policy, value, rnn_state = agent.sess.run([agent.policy, agent.value, agent.rnn_state_out],
 			                                          feed_dict = {agent.state: state,
 			                                                       agent.rnn_state_in[0]: rnn_state[0],
@@ -311,12 +312,12 @@ def a3c(env_name, num_threads = 4, restore = None, save_path = 'model'):
 
 		# Create a process for each worker
 		for i in range(num_threads):
-			processes.append(threading.Thread(target = async_trainer,
+			processes.append(threading.Thread(target = async_trainer, 
 			                                  args = (agent, envs[i], sess, i, T_queue, summary, saver, save_path,)))
 
 		# Create a process to evaluate the agent
 		processes.append(threading.Thread(target = evaluator,
-		                                args = (agent, evaluation_env, sess, T_queue, summary, saver, save_path,)))
+		                                  args = (agent, evaluation_env, sess, T_queue, summary, saver, save_path,)))
 
 		# Start all the processes
 		for p in processes:
@@ -331,12 +332,15 @@ def a3c(env_name, num_threads = 4, restore = None, save_path = 'model'):
 		for p in processes:
 			p.join()
 
+
 # Returns sum(rewards[i] * gamma **i)
 def discount(rewards, gamma):
 	return np.sum([rewards[i] * gamma ** i for i in range(len(rewards))])
 
+
 def test_equals(arr1, arr2, eps):
 	return np.sum(np.abs(np.array(arr1) - np.array(arr2))) < eps
+
 
 def main(argv):
 	num_threads = NUM_THREADS
@@ -382,4 +386,3 @@ def main(argv):
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
-
