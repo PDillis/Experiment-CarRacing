@@ -1,5 +1,5 @@
 import tensorflow as tf
-import numpy as np
+# import numpy as np
 
 
 class Agent:
@@ -22,14 +22,16 @@ class Agent:
 			self.target_value = tf.placeholder('float32',
 			                                   [None],
 			                                   name = 'target_value')
-			# Store the state, policy and value for the network
+
 			if model == 'mnih':
 				self.state, self.policy, self.value = self.build_model(42, 42, 4)
-			elif model == 'mnih-lstm':
-				self.state, self.policy, self.value = self.build_model_lstm(42, 42)
-			else:
-				# Assume we wanted a feedforward neural network
-				self.state, self.policy, self.value = self.build_model_feedforward(4)
+
+			# Try other models later on:
+			# elif model == 'mnih-lstm':
+			# 	self.state, self.policy, self.value = self.build_model_lstm(42, 42)
+			# else:
+			# 	# Assume we wanted a feedforward neural network
+			# 	self.state, self.policy, self.value = self.build_model_feedforward(4)
 
 			# Get the weights for the network
 			self.weights = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
@@ -44,7 +46,7 @@ class Agent:
 			# these don't play well with the log
 			min_policy = 1e-8
 			max_policy = 1.0 - 1e-8
-			self.log_policy = tf.log(tf.clip_by_value(self.policy, 1e-6, 1-1e-6))
+			self.log_policy = tf.log(tf.clip_by_value(self.policy, min_policy, max_policy))
 
 			# For a given state and action, compute the log of the policy at
 			# that action for that state. This also works on batches.
@@ -121,7 +123,7 @@ class Agent:
 		return self.sess.run(self.value, {self.state: state}).flatten()
 
 	def get_policy_and_value(self, state):
-		policy, value = self.ses.run([self.policy, self.value], {self.state: state})
+		policy, value = self.sess.run([self.policy, self.value], {self.state: state})
 		return policy.flatten(), value.flatten()
 
 	# Train the network on the given states and rewards.
@@ -213,163 +215,164 @@ class Agent:
 
 		return state, policy, value
 
+	# The LSTM model, but we won't be using it for now.
+	# def build_model_lstm(self, h, w):
+	# 	self.layers = {}
+	# 	# The state has shape batch size x h x w x 1. We need four dimensions in order to do convolutions
+	# 	state = tf.placeholder(dtype = tf.float32, shape = (None, h, w, 1), name = 'state')
+	# 	self.layers['state'] = state
+	#
+	# 	# Convolutional layers
+	#
+	# 	with tf.variable_scope('conv1'):
+	# 		conv1 = tf.contrib.layers.convolution2d(inputs = state,
+	# 		                                        num_outputs = 32,
+	# 		                                        kernel_size = [3, 3],
+	# 		                                        stride = [2, 2],
+	# 		                                        padding = "VALID",
+	# 		                                        activation_fn = tf.nn.elu,
+	# 		                                        weights_initializer = tf.contrib.layers.xavier_initializer_conv2d(),
+	# 		                                        biases_initializer = tf.zeros_initializer())
+	# 		self.layers['conv1'] = conv1
+	#
+	# 	with tf.variable_scope('conv2'):
+	# 		conv2 = tf.contrib.layers.convolution2d(inputs = conv1,
+	# 		                                        num_outputs = 32,
+	# 		                                        kernel_size = [3, 3],
+	# 		                                        stride = [2, 2],
+	# 		                                        padding = "VALID",
+	# 		                                        activation_fn = tf.nn.elu,
+	# 		                                        weights_initializer = tf.contrib.layers.xavier_initializer_conv2d(),
+	# 		                                        biases_initializer = tf.zeros_initializer())
+	# 		self.layers['conv2'] = conv2
+	#
+	# 	with tf.variable_scope('conv3'):
+	# 		conv3 = tf.contrib.layers.convolution2d(inputs = conv2,
+	# 		                                        num_outputs = 32,
+	# 		                                        kernel_size = [3, 3],
+	# 		                                        stride = [2, 2],
+	# 		                                        padding = "VALID",
+	# 		                                        activation_fn = tf.nn.elu,
+	# 		                                        weights_initializer = tf.contrib.layers.xavier_initializer_conv2d(),
+	# 		                                        biases_initializer = tf.zeros_initializer())
+	# 		self.layers['conv3'] = conv3
+	#
+	# 	with tf.variable_scope('conv4'):
+	# 		conv4 = tf.contrib.layers.convolution2d(inputs = conv3,
+	# 		                                        num_outputs = 32,
+	# 		                                        kernel_size = [3, 3],
+	# 		                                        stride = [2, 2],
+	# 		                                        padding = "VALID",
+	# 		                                        activation_fn = tf.nn.elu,
+	# 		                                        weights_initializer = tf.contrib.layers.xavier_initializer_conv2d(),
+	# 		                                        biases_initializer = tf.zeros_initializer())
+	# 		self.layers['conv4'] = conv4
+	#
+	# 	# Flatten the network
+	#
+	# 	with tf.variable_scope('flatten'):
+	# 		flatten = tf.contrib.layers.flatten(inputs = conv4)
+	# 		self.layers['flatten'] = flatten
+	# 		# Fully connected layer with 256 hidden units
+	#
+	# 	with tf.variable_scope('fcl1'):
+	# 		fcl1 = tf.contrib.layers.fully_connected(inputs = flatten,
+	# 		                                         num_outputs = 256,
+	# 		                                         activation_fn = tf.nn.elu,
+	# 		                                         weights_initializer = tf.contrib.layers.xavier_initializer(),
+	# 		                                         biases_initializer = tf.zeros_initializer())
+	# 		self.layers['fcl1'] = fcl1
+	#
+	# 	# Future: add one more fully connected layer
+	#
+	# 	with tf.variable_scope('lstm'):
+	# 		lstm_cell = tf.contrib.rnn.BasicLSTMCell(256, state_is_tuple = True)
+	# 		c_init = np.zeros((1, lstm_cell.state_size.c), np.float32)
+	# 		h_init = np.zeros((1, lstm_cell.state_size.h), np.float32)
+	# 		self.rnn_state_init = [c_init, h_init]
+	# 		c_in = tf.placeholder(tf.float32, [1, lstm_cell.state_size.c], "c_in")
+	# 		h_in = tf.placeholder(tf.float32, [1, lstm_cell.state_size.h], "h_in")
+	# 		self.rnn_state_in = (c_in, h_in)
+	# 		rnn_in = tf.expand_dims(fcl1, [0])
+	#
+	# 		# The sequence length is the size of the batch
+	#
+	# 		sequence_length = tf.shape(state)[:1]
+	# 		rnn_state_in = tf.contrib.rnn.LSTMStateTuple(c_in, h_in)
+	# 		lstm_outputs, lstm_state = tf.nn.dynamic_rnn(lstm_cell,
+	# 		                                             rnn_in,
+	# 		                                             initial_state = rnn_state_in,
+	# 		                                             sequence_length = sequence_length,
+	# 		                                             time_major = False)
+	# 		lstm_c, lstm_h = lstm_state
+	# 		self.rnn_state_out = (lstm_c[:1, :], lstm_h[:1, :])
+	# 		rnn_out = tf.reshape(lstm_outputs, [-1, 256])
+	# 		self.layers['rnn_state_init'] = self.rnn_state_init
+	# 		self.layers['rnn_state_in'] = self.rnn_state_in
+	# 		self.layers['rnn_state_out'] = self.rnn_state_out
+	#
+	# 	# The policy output
+	#
+	# 	with tf.variable_scope('policy'):
+	# 		policy = tf.contrib.layers.fully_connected(inputs = rnn_out,
+	# 		                                           num_outputs = self.action_size,
+	# 		                                           activation_fn = tf.nn.softmax,
+	# 		                                           weights_initializer = tf.contrib.layers.xavier_initializer(),
+	# 		                                           biases_initializer = None)
+	# 		self.layers['policy'] = policy
+	#
+	# 	# The value output
+	#
+	# 	with tf.variable_scope('value'):
+	# 		value = tf.contrib.layers.fully_connected(inputs = rnn_out,
+	# 		                                          num_outputs = 1,
+	# 		                                          activation_fn = None,
+	# 		                                          weights_initializer = tf.contrib.layers.xavier_initializer(),
+	# 		                                          biases_initializer = None)
+	# 		self.layers['value'] = value
+	#
+	# 	return state, policy, value
 
-	def build_model_lstm(self, h, w):
-		self.layers = {}
-		# The state has shape batch size x h x w x 1. We need four dimensions in order to do convolutions
-		state = tf.placeholder(dtype = tf.float32, shape = (None, h, w, 1), name = 'state')
-		self.layers['state'] = state
-
-		# Convolutional layers
-
-		with tf.variable_scope('conv1'):
-			conv1 = tf.contrib.layers.convolution2d(inputs = state,
-			                                        num_outputs = 32,
-			                                        kernel_size = [3, 3],
-			                                        stride = [2, 2],
-			                                        padding = "VALID",
-			                                        activation_fn = tf.nn.elu,
-			                                        weights_initializer = tf.contrib.layers.xavier_initializer_conv2d(),
-			                                        biases_initializer = tf.zeros_initializer())
-			self.layers['conv1'] = conv1
-
-		with tf.variable_scope('conv2'):
-			conv2 = tf.contrib.layers.convolution2d(inputs = conv1,
-			                                        num_outputs = 32,
-			                                        kernel_size = [3, 3],
-			                                        stride = [2, 2],
-			                                        padding = "VALID",
-			                                        activation_fn = tf.nn.elu,
-			                                        weights_initializer = tf.contrib.layers.xavier_initializer_conv2d(),
-			                                        biases_initializer = tf.zeros_initializer())
-			self.layers['conv2'] = conv2
-
-		with tf.variable_scope('conv3'):
-			conv3 = tf.contrib.layers.convolution2d(inputs = conv2,
-			                                        num_outputs = 32,
-			                                        kernel_size = [3, 3],
-			                                        stride = [2, 2],
-			                                        padding = "VALID",
-			                                        activation_fn = tf.nn.elu,
-			                                        weights_initializer = tf.contrib.layers.xavier_initializer_conv2d(),
-			                                        biases_initializer = tf.zeros_initializer())
-			self.layers['conv3'] = conv3
-
-		with tf.variable_scope('conv4'):
-			conv4 = tf.contrib.layers.convolution2d(inputs = conv3,
-			                                        num_outputs = 32,
-			                                        kernel_size = [3, 3],
-			                                        stride = [2, 2],
-			                                        padding = "VALID",
-			                                        activation_fn = tf.nn.elu,
-			                                        weights_initializer = tf.contrib.layers.xavier_initializer_conv2d(),
-			                                        biases_initializer = tf.zeros_initializer())
-			self.layers['conv4'] = conv4
-
-		# Flatten the network
-
-		with tf.variable_scope('flatten'):
-			flatten = tf.contrib.layers.flatten(inputs = conv4)
-			self.layers['flatten'] = flatten
-			# Fully connected layer with 256 hidden units
-
-		with tf.variable_scope('fcl1'):
-			fcl1 = tf.contrib.layers.fully_connected(inputs = flatten,
-			                                         num_outputs = 256,
-			                                         activation_fn = tf.nn.elu,
-			                                         weights_initializer = tf.contrib.layers.xavier_initializer(),
-			                                         biases_initializer = tf.zeros_initializer())
-			self.layers['fcl1'] = fcl1
-
-		# Future: add one more fully connected layer
-
-		with tf.variable_scope('lstm'):
-			lstm_cell = tf.contrib.rnn.BasicLSTMCell(256, state_is_tuple = True)
-			c_init = np.zeros((1, lstm_cell.state_size.c), np.float32)
-			h_init = np.zeros((1, lstm_cell.state_size.h), np.float32)
-			self.rnn_state_init = [c_init, h_init]
-			c_in = tf.placeholder(tf.float32, [1, lstm_cell.state_size.c], "c_in")
-			h_in = tf.placeholder(tf.float32, [1, lstm_cell.state_size.h], "h_in")
-			self.rnn_state_in = (c_in, h_in)
-			rnn_in = tf.expand_dims(fcl1, [0])
-
-			# The sequence length is the size of the batch
-
-			sequence_length = tf.shape(state)[:1]
-			rnn_state_in = tf.contrib.rnn.LSTMStateTuple(c_in, h_in)
-			lstm_outputs, lstm_state = tf.nn.dynamic_rnn(lstm_cell,
-			                                             rnn_in,
-			                                             initial_state = rnn_state_in,
-			                                             sequence_length = sequence_length,
-			                                             time_major = False)
-			lstm_c, lstm_h = lstm_state
-			self.rnn_state_out = (lstm_c[:1, :], lstm_h[:1, :])
-			rnn_out = tf.reshape(lstm_outputs, [-1, 256])
-			self.layers['rnn_state_init'] = self.rnn_state_init
-			self.layers['rnn_state_in'] = self.rnn_state_in
-			self.layers['rnn_state_out'] = self.rnn_state_out
-
-		# The policy output
-
-		with tf.variable_scope('policy'):
-			policy = tf.contrib.layers.fully_connected(inputs = rnn_out,
-			                                           num_outputs = self.action_size,
-			                                           activation_fn = tf.nn.softmax,
-			                                           weights_initializer = tf.contrib.layers.xavier_initializer(),
-			                                           biases_initializer = None)
-			self.layers['policy'] = policy
-
-		# The value output
-
-		with tf.variable_scope('value'):
-			value = tf.contrib.layers.fully_connected(inputs = rnn_out,
-			                                          num_outputs = 1,
-			                                          activation_fn = None,
-			                                          weights_initializer = tf.contrib.layers.xavier_initializer(),
-			                                          biases_initializer = None)
-			self.layers['value'] = value
-
-		return state, policy, value
-
-	def build_model_feedforward(self, input_dim, num_hidden = 30):
-		self.layers = {}
-		state = tf.placeholder(dtype = tf.float32, shape = (None, input_dim), name = 'state')
-
-		self.layers['state'] = state
-
-		# Two fully connected layer with num_hidden hidden units
-		with tf.variable_scope('fcl1'):
-			fcl1 = tf.contrib.layers.fully_connected(inputs = state,
-			                                         num_outputs = num_hidden,
-			                                         activation_fn = tf.nn.elu,
-			                                         weights_initializer = tf.contrib.layers.xavier_initializer(),
-			                                         biases_initializer = tf.zeros_initializer())
-			self.layers['fcl1'] = fcl1
-
-		with tf.variable_scope('fcl2'):
-			fcl2 = tf.contrib.layers.fully_connected(inputs = fcl1,
-			                                         num_outputs = num_hidden,
-			                                         activation_fn = tf.nn.elu,
-			                                         weights_initializer = tf.contrib.layers.xavier_initializer(),
-			                                         biases_initializer = tf.zeros_initializer())
-			self.layers['fcl2'] = fcl2
-
-		# The policy output to the possible actions
-		with tf.variable_scope('policy'):
-			policy = tf.contrib.layers.fully_connected(inputs = fcl2,
-			                                           num_outputs = self.action_size,
-			                                           activation_fn = tf.nn.softmax,
-			                                           weights_initializer = tf.contrib.layers.xavier_initializer(),
-			                                           biases_initializer = tf.zeros_initializer())
-			self.layers['policy'] = policy
-
-		# The value output
-		with tf.variable_scope('value'):
-			value = tf.contrib.layers.fully_connected(inputs = fcl2,
-			                                          num_outputs = 1,
-			                                          activation_fn = None,
-			                                          weights_initializer = tf.contrib.layers.xavier_initializer(),
-			                                          biases_initializer = tf.zeros_initializer())
-			self.layers['value'] = value
-
-		return state, policy, value
+	# A simple feed-forward (FF) model, but we won't be using it for now.
+	# def build_model_feedforward(self, input_dim, num_hidden = 30):
+	# 	self.layers = {}
+	# 	state = tf.placeholder(dtype = tf.float32, shape = (None, input_dim), name = 'state')
+	#
+	# 	self.layers['state'] = state
+	#
+	# 	# Two fully connected layer with num_hidden hidden units
+	# 	with tf.variable_scope('fcl1'):
+	# 		fcl1 = tf.contrib.layers.fully_connected(inputs = state,
+	# 		                                         num_outputs = num_hidden,
+	# 		                                         activation_fn = tf.nn.elu,
+	# 		                                         weights_initializer = tf.contrib.layers.xavier_initializer(),
+	# 		                                         biases_initializer = tf.zeros_initializer())
+	# 		self.layers['fcl1'] = fcl1
+	#
+	# 	with tf.variable_scope('fcl2'):
+	# 		fcl2 = tf.contrib.layers.fully_connected(inputs = fcl1,
+	# 		                                         num_outputs = num_hidden,
+	# 		                                         activation_fn = tf.nn.elu,
+	# 		                                         weights_initializer = tf.contrib.layers.xavier_initializer(),
+	# 		                                         biases_initializer = tf.zeros_initializer())
+	# 		self.layers['fcl2'] = fcl2
+	#
+	# 	# The policy output to the possible actions
+	# 	with tf.variable_scope('policy'):
+	# 		policy = tf.contrib.layers.fully_connected(inputs = fcl2,
+	# 		                                           num_outputs = self.action_size,
+	# 		                                           activation_fn = tf.nn.softmax,
+	# 		                                           weights_initializer = tf.contrib.layers.xavier_initializer(),
+	# 		                                           biases_initializer = tf.zeros_initializer())
+	# 		self.layers['policy'] = policy
+	#
+	# 	# The value output
+	# 	with tf.variable_scope('value'):
+	# 		value = tf.contrib.layers.fully_connected(inputs = fcl2,
+	# 		                                          num_outputs = 1,
+	# 		                                          activation_fn = None,
+	# 		                                          weights_initializer = tf.contrib.layers.xavier_initializer(),
+	# 		                                          biases_initializer = tf.zeros_initializer())
+	# 		self.layers['value'] = value
+	#
+	# 	return state, policy, value
