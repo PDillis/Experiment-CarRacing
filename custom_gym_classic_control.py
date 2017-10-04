@@ -1,14 +1,14 @@
 import gym
 import numpy as np
-import random
+
 
 class CustomGymClassicControl:
 	def __init__(self, env_name, skip_actions = 4):
 		self.env = gym.make(env_name)
 		self.skip_actions = skip_actions
-		self.action_size = not env.action_space
+		self.action_size = len(self.action_space)
 		self.action_space = range(self.action_size)
-		self.observation_shape = env.observation_shape.shape
+		self.observation_shape = self.env.observation_shape.shape
 
 		self.state = None
 
