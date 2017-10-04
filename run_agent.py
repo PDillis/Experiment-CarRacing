@@ -1,13 +1,14 @@
 from custom_carracing_gym import RacingGym
 from agent_lstm import Agent
-import os, getopt, sys
+import getopt
+import sys
 import gym
 import tensorflow as tf
 import numpy as np
 from time import time, sleep
 
-# Returns a tensorflow session
 
+# Returns a tensorflow session
 def run_agent(save_path, T, env_name):
 	with tf.Session() as sess:
 		agent = Agent(session = sess, action_size = 5, optimizer = tf.train.AdamOptimizer(1e-4))
@@ -19,6 +20,7 @@ def run_agent(save_path, T, env_name):
 		play(agent, env_name)
 
 		return sess, agent
+
 
 def play(agent, env_name, render = True, num_episodes = 10, fps = 5.0, monitor = True):
 	gym_env = gym.make(env_name)
@@ -87,7 +89,6 @@ def main(argv):
 	print("Reading from ", save_path)
 	print("Running agent.")
 	run_agent(save_path, T, env_name)
-
 
 	if __name__ == '__main__':
 		main(sys.argv[1:])
