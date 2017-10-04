@@ -1,8 +1,7 @@
 import gym
-# from gym import spaces
+# from gym import spaces  # When we use MultiDiscrete the action space
 import numpy as np
 from scipy.misc import imresize
-
 
 
 class RacingGym:
@@ -19,11 +18,12 @@ class RacingGym:
 		self.h = h
 
 		# Limit the brake, as per explained in
-		# https://github.com/oguzelibol/CarRacingA3C, but we also add 'no action'
+		# https://github.com/oguzelibol/CarRacingA3C, but we also add 'no action':
 
-		if env_name == 'CarRacing-v0':
 		# No action, turn right, turn left, accelerate, brake, respectively.
+		if env_name == 'CarRacing-v0':
 			self.action_space = [[0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, 0, 0.8]]
+
 		# In the future, try all the possible (discrete)  actions with MultiDiscrete action space:
 		# self.action_space = gym.spaces.MultiDiscrete([[-1, 1], [0,1], [0,1]])
 
@@ -53,7 +53,7 @@ class RacingGym:
 		if is_start or self.state is None:
 			self.state = np.repeat(s, self.num_frames, axis = 3)
 		else:
-			self.state = np.append(s, self.state[:,:,:,:self.num_frames-1], axis = 3)
+			self.state = np.append(s, self.state[:, :, :, :self.num_frames-1], axis = 3)
 		return self.state
 
 	# Render the current frame
@@ -69,7 +69,7 @@ class RacingGym:
 		action = self.action_space[action_idx]
 		accum_reward = 0
 		prev_s = None
-		for _ in range( self.skip_actions):
+		for _ in range(self.skip_actions):
 			s, r, term, info = self.env.step(action)
 			accum_reward += r
 			if term:
@@ -79,4 +79,3 @@ class RacingGym:
 		if prev_s is not None:
 			s = np.maximum.reduce([s, prev_s])
 		return self.preprocess(s), accum_reward, term, info
-
