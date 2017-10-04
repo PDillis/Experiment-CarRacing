@@ -1,6 +1,6 @@
 import os
-import sys, getopt
-import multiprocessing
+import sys
+import getopt
 import threading
 import tensorflow as tf
 import numpy as np
@@ -274,11 +274,7 @@ def a3c(env_name, num_threads = 4, restore = None, save_path = 'model'):
 	envs = []
 	for _ in range(num_threads + 1):
 		gym_env = gym.make(env_name)
-		if env_name == 'CartPole-v0':
-			env = CustomGymClassicControl(gym_env)
-		else:
-			print("Assuming other Gym environment and playing with pixels.")
-			env = RacingGym(env_name)
+		env = RacingGym(gym_env, env_name, num_frames=1)
 		envs.append(env)
 
 	# Separate out the evaluation environment.
@@ -312,7 +308,7 @@ def a3c(env_name, num_threads = 4, restore = None, save_path = 'model'):
 
 		# Create a process for each worker
 		for i in range(num_threads):
-			processes.append(threading.Thread(target = async_trainer, 
+			processes.append(threading.Thread(target = async_trainer,
 			                                  args = (agent, envs[i], sess, i, T_queue, summary, saver, save_path,)))
 
 		# Create a process to evaluate the agent
@@ -350,13 +346,10 @@ def main(argv):
 	try:
 		opts, args = getopt.getopt(argv, "hg:s:r:t:")
 	except getopt.GetoptError:
-		# Try to do this with parser/argparse
-		print("To run the OpenAI Gym game and save to the given save path: \
-		a3c_lstm.py -env <env_name> -s <save_path> -t <num_threads>")
-		print("To resume training playing on the given OpenAI Gym game from the \
-		given save path: python a3c_lstm.py -env <env_name> -s <save_path> \
-		-t <num_threads> -r <the T in save_path-t>")
-
+		print("To run the CarRacing-v0 environment and save to the save path, run: "\
+		      "python a3c_lstm.py -env <environment name> -s <save path> -t <numb. threads>")
+		print("To resume training on the CarRacing-v0 environment (with a known save path), run: "\
+		      "python a3c_lstm.py -env <environment name> -s <save path> -t <numb. threads> -r <the T in save_path>")
 	for opt, arg in opts:
 		if opt == '-h':
 			print("Options: -env the env name, -s the save path, -t number of threads, -r the save path given")
