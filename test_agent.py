@@ -6,6 +6,7 @@ import gym
 from custom_carracing_gym import RacingGym
 import random
 
+
 def test_network():
 	# Reset the graph to make sure we get a new session.
 	with tf.Session() as sess:
@@ -31,12 +32,14 @@ def test_network():
 		print("Total number of variables: ")
 		print(np.sum([np.prod(np.shape(var)) for var in trainable_variables_values]))
 
+
 def display_output(sess, agent, state):
 	layer_outputs = {}
 	for k, v in agent.layers:
 		layer_outputs[k] = sess.run(v, feed_dict = {agent.state: state})
 
 	print(layer_outputs)
+
 
 def test_network_output():
 	# Reset the graph to make sure we get a new session.
@@ -60,10 +63,10 @@ def test_network_output():
 		conv1_output = sess.run(agent.layers['conv1'], feed_dict = {agent.state: state})
 		plot_3d(conv1_output[0, :, :, :], title = 'conv1')
 
-
 		# And plot the output of the second conv layer
 		conv2_output = sess.run(agent.layers['conv2'], feed_dict = {agent.state: state})
 		plot_3d(conv2_output[0, :, :, :], title = 'conv2')
+
 
 # Plots each filter in a 3D array by using the third dimension as an index to each 2D grayscale image
 def plot_3d(arr, title = None):
@@ -73,6 +76,7 @@ def plot_3d(arr, title = None):
 			plt.title(title + ' filter ' + str(i))
 		plt.imshow(arr[:, :, i], cmap = 'gray')
 		plt.show()
+
 
 def get_random_state(env_name, random_steps = 20):
 	gym_env = gym.make(env_name)
