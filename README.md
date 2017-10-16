@@ -10,9 +10,9 @@ We will use the [A3C algorithm](https://arxiv.org/abs/1602.01783) to solve the `
 
 Choosing the correct architecture is a time-consuming task, but luckily this work has already been done for us. [Jang, Min and Lee's](https://www.scribd.com/document/358019044/Reinforcement-Car-Racing-with-A3C) tested from a two-layered CNN up to seven-layered CNN and found that the best results where obtained with the two-layered CNN. This was due mostly because: 
 
-1) The states returned by Gym are too small, even compared to the Atari environments (`96*96*3` vs. `210*160*3`).
-2) Deeper networks are harder to train, as the models would be more likely to fall into a local minima at the beginning of training. 
-3) Deeper networks take longer to train, due to the larger number of parameters, and thus there is no way of telling when the model has converged.
+1) **The states returned by Gym are too small**, even compared to the Atari environments (`96*96*3` vs. `210*160*3`).
+2) **Deeper networks are harder to train**, as the models would be more likely to fall into a local minima at the beginning of training. 
+3) **Deeper networks take longer to train**, due to the larger number of parameters, and thus there is no way of telling when the model has converged.
 
 While it is tempting to simply use the same neural network architecture as [Gym's universe-starter-agent](https://github.com/openai/universe-starter-agent), it won't perform well in this task for the reasons stated before, as this architecture consists of a four-layered CNN. Thus, we will choose the same architecture as Jang, Min and Lee, that is:
 
@@ -20,6 +20,27 @@ While it is tempting to simply use the same neural network architecture as [Gym'
 * Layer 2: F=32, W=3, S=2
 
 as per the notation used in [CS231n](http://cs231n.github.io/convolutional-networks/#conv).
+
+### Image Preprocessing
+
+Perhaps the issue with the `CarRacing-v0` environment is that when a human user plays the environment, the state dimension is rendered to a much higher resolution, `1024*1024*3`, compared to what the agent actually trains on, and this [lack resolution prevents us from more effectively train agents](https://github.com/openai/gym/issues/612). In the following figure, we see a snippet of this
+
+![carracing 1](https://user-images.githubusercontent.com/24496178/31581175-a6c8d278-b164-11e7-852b-65805d06e6ac.png)
+
+Whereas this is how the agent will see each frame:
+
+![carracing_lowres](https://user-images.githubusercontent.com/24496178/31581166-441cc422-b164-11e7-8cea-6de9a6493768.png)
+
+For shock value, this is the actual size (the car is almost nonexistent):
+
+![car_racing_9696](https://user-images.githubusercontent.com/24496178/31592526-3e7274b6-b229-11e7-9fc2-140a982b26dd.png)
+
+Clearly, the bottom black bar, the dashboard with the state information, is useless for the agent to learn new informatoin about the state it currently is in. Surely we can extract something from it, but we will only concentrate on the raw pixel values so that our agent learns to control the car. This, combined with the fact that we don't have many colors or combination of these, reinforces the idea of not using too complex CNNs. Thus, our preprocessing will be as such:
+
+1) **Apply gray-scaling to the original frame.** This will change our states from `96*96*3` to `96*96*1`. 
+2) **Zero-center the values of each pixel**, or in other words, subtract `127.0`, so the values will be in range `[-127, 128]` (since each gray-scaled pixel will have values from `[0, 255]`.
+3) We will **remove the dashboard**, which has a height of 12 pixels, and then remove 6 pixels from both sides so that we are left with a square frame of size `84*84*1`.
+4) **Concatenate 5 consecutive frames**, so our states will be of the form `84*84*5`.
 
 ## Action and State spaces
 The continuity of the action and observation spaces are key characteristics of this Gym environment, which are perhaps what lead to the obscurity of the `Box2D` spaces as they are not as famous as the Atari 2600 games. Indeed, running:
@@ -69,13 +90,13 @@ This addresses the issue when the agent is 'not sure enough' that the action to 
 
 We will try to reproduce the work of Jang, Min and Lee, but looking at their implementation, we will do the following tests (changes and/or additions):
 
-0) Add Continuous Certainty to mimic continuity in the possible actions taken by our agent.
-1) Add specifically the action 'no action' to the action space, i.e., add `[0, 0, 0]` to our possible actions available.
-2) As discussed previously, change our action space to `spaces.MultiDiscrete([[-1, 1], [0, 1], [0, 1]])`.
-3) Use 2 threads insted of the planned 4.
-4) To ensure long-term stability of our code, use `tf.layers` instead of `tf.contrib.layers` for our initializers, as well as the convolutional and fully connected layers.
-5) Add a RNN after our final fully connected layer.
-6) Use ELU instead of ReLU as our activation functions.
+0) **Add Continuous Certainty** to mimic continuity in the possible actions taken by our agent.
+1) **Specifically add the action 'no action' to the action space**, i.e., add `[0, 0, 0]` to our action available.
+2) As discussed previously, **change our action space to `spaces.MultiDiscrete([[-1, 1], [0, 1], [0, 1]])`**.
+3) **Use 2 threads** insted of the planned 4.
+4) To ensure long-term stability of our code, **use `tf.layers` instead of `tf.contrib.layers` for our initializers**, as well as the convolutional and fully connected layers.
+5) **Add a LSTM** after our fully connected layer.
+6) **Use ELU instead of ReLU** as our activation functions.
 
 For comparison, we will use as a baseline Elibol and Khan's 100-episode score of 652.29 ± 10.17 and Jang, Min and Lee's score of 571.68 ± 19.38 and see whether these changes will improve or not the known result.
 
