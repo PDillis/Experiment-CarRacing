@@ -23,17 +23,17 @@ as per the notation used in [CS231n](http://cs231n.github.io/convolutional-netwo
 
 ### Image Preprocessing
 
-Perhaps the issue with the `CarRacing-v0` environment is that when a human user plays the environment, the state dimension is rendered to a much higher resolution, `1024*1024*3`, compared to what the agent actually trains on, and this [lack resolution prevents us from more effectively train agents](https://github.com/openai/gym/issues/612). In the following figure, we see a snippet of this
+Perhaps the issue with the `CarRacing-v0` environment is that when a human user plays the environment, the state dimension is rendered to a much higher resolution, `1024*1024*3`, compared to what the agent actually trains on, and this [lack resolution prevents us from more effectively train agents](https://github.com/openai/gym/issues/612). In the following figure, we see a how the player sees the car and its environment when playing:
 
-![carracing 1](https://user-images.githubusercontent.com/24496178/31581175-a6c8d278-b164-11e7-852b-65805d06e6ac.png)
+![car_racing_player](https://user-images.githubusercontent.com/24496178/31636939-c81f0b18-b2cc-11e7-8468-ad15d9a991b5.png)
 
 Whereas this is how the agent will see each frame:
 
-![carracing_lowres](https://user-images.githubusercontent.com/24496178/31581166-441cc422-b164-11e7-8cea-6de9a6493768.png)
-
-For shock value, this is the actual size (the car is almost nonexistent):
-
 ![car_racing_9696](https://user-images.githubusercontent.com/24496178/31592526-3e7274b6-b229-11e7-9fc2-140a982b26dd.png)
+
+Expanding this to double its size, we see how coarse it is and how the finer details are simply lost (note the illegible number representing the reward for that run):
+
+![carracing_lowres](https://user-images.githubusercontent.com/24496178/31581166-441cc422-b164-11e7-8cea-6de9a6493768.png)
 
 Clearly, the bottom black bar, the dashboard with the state information, is useless for the agent to learn new informatoin about the state it currently is in. Surely we can extract something from it, but we will only concentrate on the raw pixel values so that our agent learns to control the car. This, combined with the fact that we don't have many colors or combination of these, reinforces the idea of not using too complex CNNs. Thus, our preprocessing will be as such:
 
