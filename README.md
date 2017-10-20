@@ -23,7 +23,7 @@ as per the notation used in [CS231n](http://cs231n.github.io/convolutional-netwo
 
 ### Image Preprocessing
 
-Perhaps the issue with the `CarRacing-v0` environment is that when a human user plays the environment, the state dimension is rendered to a much higher resolution, `1024*1024*3`, compared to what the agent actually trains on, and this [lack resolution prevents us from more effectively train agents](https://github.com/openai/gym/issues/612). In the following figure, we see a how the player sees the car and its environment when playing:
+Perhaps the issue with the `CarRacing-v0` environment is that when a human user plays the environment, the state dimension is rendered to a much higher resolution, `1200*1000*3`, compared to what the agent actually trains on, and this [lack resolution prevents us from more effectively train agents](https://github.com/openai/gym/issues/612). In the following figure, we see a how the player sees the car and its environment when playing:
 
 ![car_racing_player](https://user-images.githubusercontent.com/24496178/31636939-c81f0b18-b2cc-11e7-8468-ad15d9a991b5.png)
 
@@ -76,7 +76,7 @@ However, this would still present us with some 'forbidden' combinations of actio
 self.action_space = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, 0, 0.8]]
 ```
 
-that is, turn right, turn left, accelerate, and brake, respectively, where our brake is limited to `0.8` following the recommendation by [Elibol and Khan's](https://github.com/oguzelibol/CarRacingA3C) implementation. In the future we plan to ignore this limitation and use the `MultiDiscrete` action space, as it is always possible that our agent might find that some combinations of actions which seem nonsensical to us might be of use for specific scenarios.
+that is, turn right, turn left, accelerate, and brake, respectively, where our brake is limited to `0.8` following [the action the car performs as the user brakes](https://github.com/openai/gym/blob/3ffbae8eeacf6024aa3697304cc9c0b873032c97/gym/envs/box2d/car_racing.py#L467), and is reinforced by [Elibol and Khan's](https://github.com/oguzelibol/CarRacingA3C) implementation. In the future we plan to ignore this limitation and use the `MultiDiscrete` action space, as it is always possible that our agent might find that some combinations of actions which seem nonsensical to us might be of use for specific scenarios.
 
 #### Continuous Certainty
 
